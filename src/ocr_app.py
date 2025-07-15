@@ -7,9 +7,9 @@ except ImportError:  # pragma: no cover - Pillow not installed
     Image = None
 
 try:
-    import pytesseract
-except ImportError:  # pragma: no cover - pytesseract not installed
-    pytesseract = None
+    import boto3
+except ImportError:  # pragma: no cover - boto3 not installed
+    boto3 = None
 
 
 def load_image(path: str):
@@ -29,10 +29,21 @@ def enhance_contrast(image) -> 'Image.Image':
 
 
 def run_ocr(image) -> str:
-    """Run OCR on the provided image."""
-    if pytesseract is None:
-        raise RuntimeError("pytesseract is required but not installed")
-    return pytesseract.image_to_string(image)
+    """Run OCR on the provided image using AWS Rekognition."""
+    if boto3 is None:
+        raise RuntimeError("boto3 is required but not installed")
+    import io
+
+    buffer = io.BytesIO()
+    fmt = image.format or "PNG"
+    image.save(buffer, format=fmt)
+    image_bytes = buffer.getvalue()
+
+    client = boto3.client("rekognition")
+    response = client.detect_text(Image={"Bytes": image_bytes})
+    detections = response.get("TextDetections", [])
+    text = " ".join(d.get("DetectedText", "") for d in detections)
+    return text
 
 
 def find_xl(text: str) -> Tuple[bool, int]:
