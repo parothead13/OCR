@@ -39,7 +39,14 @@ def run_ocr(image) -> str:
     image.save(buffer, format=fmt)
     image_bytes = buffer.getvalue()
 
-    client = boto3.client("rekognition")
+    import os
+
+    region = (
+        os.environ.get("AWS_REGION")
+        or os.environ.get("AWS_DEFAULT_REGION")
+        or "us-east-1"
+    )
+    client = boto3.client("rekognition", region_name=region)
     response = client.detect_text(Image={"Bytes": image_bytes})
     detections = response.get("TextDetections", [])
     text = " ".join(d.get("DetectedText", "") for d in detections)
