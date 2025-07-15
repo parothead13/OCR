@@ -8,6 +8,12 @@ of the contiguous letters `XL` (case-insensitive).
 python -m src.ocr_app path/to/image.png
 ```
 
+To scan all images in a directory and write the results to a CSV file:
+
+```
+python -m src.ocr_app path/to/folder --csv results.csv
+```
+
 The script requires `Pillow` and `boto3` to be installed and
 valid AWS credentials with access to the Rekognition API.
 

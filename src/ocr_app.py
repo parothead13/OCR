@@ -59,18 +59,48 @@ def find_xl(text: str) -> Tuple[bool, int]:
     return bool(matches), len(matches)
 
 
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="OCR XL detector")
-    parser.add_argument("image", help="Path to image file")
-    args = parser.parse_args()
-
-    img = load_image(args.image)
+def process_image_file(path: str) -> Tuple[bool, int]:
+    """Process a single image file and return XL detection results."""
+    img = load_image(path)
     img = enhance_contrast(img)
     text = run_ocr(img)
-    found, count = find_xl(text)
-    if found:
-        print(f"Found {count} occurrence(s) of 'XL'.")
+    return find_xl(text)
+
+
+def main(argv=None) -> None:
+    """Entry point for command-line execution."""
+    import argparse
+    import csv
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(description="OCR XL detector")
+    parser.add_argument("path", help="Path to image file or directory")
+    parser.add_argument("--csv", dest="csv_path", help="Write results to CSV")
+    args = parser.parse_args(argv)
+
+    p = Path(args.path)
+    if p.is_dir():
+        files = [f for f in p.iterdir() if f.is_file() and f.suffix.lower() in {".png", ".jpg", ".jpeg"}]
     else:
-        print("No 'XL' found.")
+        files = [p]
+
+    results = []
+    for file in files:
+        found, count = process_image_file(str(file))
+        results.append({"file": str(file), "found": found, "count": count})
+
+    if args.csv_path:
+        with open(args.csv_path, "w", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=["file", "found", "count"])
+            writer.writeheader()
+            writer.writerows(results)
+    else:
+        for row in results:
+            if row["found"]:
+                print(f"{row['file']}: Found {row['count']} occurrence(s) of 'XL'.")
+            else:
+                print(f"{row['file']}: No 'XL' found.")
+
+
+if __name__ == "__main__":
+    main()
